@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Budget Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+  /* ─── DESIGN TOKENS ─── */
+  :root {
+    --bg:          #171614;
+    --surface:     #1C1B19;
+    --surface-alt: #201F1D;
+    --border:      #393836;
+    --text:        #CDCCCA;
+    --muted:       #797876;
+    --faint:       #5A5957;
+    --primary:     #4F98A3;
+    --primary-h:   #227F8B;
+    --danger:      #D163A7;
+    --danger-h:    #b8479a;
+    --success:     #6DAA45;
+    --warning:     #BB653B;
+    --gold:        #E8AF34;
+    --radius:      8px;
+    --radius-lg:   12px;
+    --shadow:      0 1px 3px rgba(0,0,0,.45), 0 4px 12px rgba(0,0,0,.3);
+    --transition:  .15s ease;
+    --font:        'Inter', system-ui, sans-serif;
+    --mono:        'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  /* ─── RESET ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── LAYOUT ─── */
+  .app-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* ─── HEADER ─── */
+  .app-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .app-header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: #fff;
+  }
+  .app-header p {
+    color: var(--muted);
+    font-size: .9rem;
+    margin-top: 4px;
+    max-width: 600px;
+  }
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    font: 500 .8rem var(--font);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background var(--transition), border-color var(--transition), opacity var(--transition);
+    white-space: nowrap;
+    outline: none;
+    text-decoration: none;
+  }
+  .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .btn-primary  { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover  { background: var(--primary-h); border-color: var(--primary-h); }
+  .btn-ghost    { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover    { background: var(--surface-alt); }
+  .btn-danger   { background: transparent; color: var(--danger); border-color: var(--danger); }
+  .btn-danger:hover   { background: rgba(209,99,167,.1); }
+  .btn-success  { background: var(--success); color: #fff; border-color: var(--success); }
+  .btn-success:hover  { opacity: .85; }
+  .btn-sm { padding: 4px 10px; font-size: .75rem; }
+  .btn-icon { padding: 5px 8px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+    animation: fadeUp .25s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green  { background: var(--success); }
+  .dot-red    { background: var(--danger); }
+  .dot-blue   { background: var(--primary); }
+  .dot-gold   { background: var(--gold); }
+  .dot-orange { background: var(--warning); }
+
+  /* ─── TABLES ─── */
+  .tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font: 500 .75rem var(--font);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition);
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-alt); }
+  tbody td {
+    padding: 10px 14px;
+    vertical-align: middle;
+  }
+  .td-actions { width: 80px; text-align: right; white-space: nowrap; }
+  tfoot tr { background: var(--surface-alt); border-top: 1px solid var(--border); }
+  tfoot td {
+    padding: 12px 14px;
+    font-size: .85rem;
+    font-weight: 600;
+  }
+  .sum-label { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ─── INPUTS IN TABLE ─── */
+  .cell-input {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text);
+    font: 400 .875rem var(--font);
+    padding: 4px 6px;
+    width: 100%;
+    min-width: 80px;
+    transition: border-color var(--transition), background var(--transition);
+  }
+  .cell-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--bg);
+  }
+  .cell-input.num {
+    font-family: var(--mono);
+    font-size: .82rem;
+    text-align: right;
+  }
+  .cell-input::placeholder { color: var(--faint); }
+
+  /* ─── SUMMARY CARDS ─── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 20px;
+  }
+  .kpi-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: border-color var(--transition);
+  }
+  .kpi-card:hover { border-color: var(--primary); }
+  .kpi-label { font-size: .73rem; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .kpi-value { font: 700 1.6rem var(--mono); letter-spacing: -.02em; }
+  .kpi-value.positive { color: var(--success); }
+  .kpi-value.negative { color: var(--danger); }
+  .kpi-value.neutral  { color: #fff; }
+  .kpi-value.muted    { color: var(--muted); }
+
+  /* ─── RETIREMENT TABLE ─── */
+  .ret-total td { font-weight: 700; color: #fff; border-top: 2px solid var(--border); }
+  .ret-total .mono-val { color: var(--gold); }
+
+  /* ─── CALCULATOR MODE ─── */
+  .calc-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: .83rem;
+  }
+  .calc-bar label { color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .calc-bar input[type="number"] {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: .83rem;
+    padding: 4px 8px;
+    width: 70px;
+  }
+  .calc-bar input:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .toggle-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--muted); font-size: .83rem; }
+  .toggle-label input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+  /* ─── SECTION ACTIONS ─── */
+  .section-actions { padding: 12px 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ─── MONO NUMBERS ─── */
+  .mono-val {
+    font-family: var(--mono);
+    font-size: .82rem;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* ─── BADGE ─── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .badge-green  { background: rgba(109,170,69,.15); color: var(--success); }
+  .badge-red    { background: rgba(209,99,167,.15); color: var(--danger); }
+
+  /* ─── FOOTER ─── */
+  .app-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: .73rem;
+    color: var(--faint);
+    z-index: 100;
+  }
+  #last-saved { font-family: var(--mono); }
+  /* Prevent footer from overlapping last section */
+  body { padding-bottom: 44px; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    animation: fadeIn .15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    width: min(420px, 90vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    animation: scaleIn .15s ease;
+  }
+  @keyframes scaleIn { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-box h3 { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .modal-box p  { font-size: .88rem; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ─── PRINT ─── */
+  @media print {
+    .no-print, .app-footer, .btn, .section-actions, .calc-bar, .header-actions { display: none !important; }
+    body { background: #fff; color: #000; }
+    .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .kpi-card { border: 1px solid #ccc; }
+    .app-wrap { padding: 0; max-width: 100%; }
+    .kpi-value { color: #000 !important; }
+    .kpi-value.positive { color: #1a7a00 !important; }
+    .kpi-value.negative { color: #c00 !important; }
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 680px) {
+    .app-header { flex-direction: column; }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    thead th:nth-child(4), tbody td:nth-child(4) { display: none; }
+    .app-footer { font-size: .68rem; padding: 6px 12px; }
+  }
+  @media (max-width: 420px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 1.35rem; }
+  }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed;
+    bottom: 52px; left: 50%; transform: translateX(-50%);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 18px;
+    font-size: .83rem;
+    color: var(--text);
+    z-index: 300;
+    opacity: 0;
+    transition: opacity .2s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ─── CHART PANELS ─── */
+  .chart-panel {
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .chart-title {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--faint);
+    margin-bottom: 12px;
+  }
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .chart-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 160px;
+    color: var(--faint);
+    font-size: .82rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+  /* two-column layout: table | chart */
+  .card-split {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
+  }
+  .card-split .tbl-wrap { border-right: 1px solid var(--border); }
+  .card-split .chart-panel { min-width: 0; }
+  @media (max-width: 900px) {
+    .card-split { grid-template-columns: 1fr; }
+    .card-split .tbl-wrap { border-right: none; }
+  }
+
+  /* ─── SECTION SEPARATOR ─── */
+  .section-title {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--faint);
+    margin: 32px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="app-wrap">
+
+  <!-- ════════════ HEADER ════════════ -->
+  <header class="app-header">
+    <div>
+      <h1>Budget Management</h1>
+      <p>Track monthly income, expenses, and your long-term retirement projection. All data is saved automatically.</p>
+    </div>
+    <div class="header-actions no-print">
+      <button class="btn btn-ghost btn-sm" onclick="exportJSON()">⬇ Export JSON</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+        ⬆ Import JSON
+        <input type="file" accept=".json" style="display:none" onchange="importJSON(event)" />
+      </label>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmClearAll()">🗑 Clear All Data</button>
+    </div>
+  </header>
+
+  <!-- ════════════ INCOME ════════════ -->
+  <p class="section-title">Monthly Income</p>
+  <div class="card">
+    <div class="card-header">
+      <h2><span class="card-dot dot-green"></span> Income (Monthly)</h2>
+      <button class="btn btn-primary btn-sm no-print" onclick="addRow('income')">+ Add Row</button>
+      <button class="btn btn-ghost btn-sm no-print" onclick="resetSection('income')">Clear Section</button>
+    </div>
+    <div class="card-split">
+      <div class="tbl-wrap">
+        <table id="income-table" aria-label="Monthly income">
+          <thead>
+            <tr>
+              <th>Income Item</th>
+              <th>Gross Amount</th>
+              <th>Net Pay</th>
+              <th>Notes</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="income-body"></tbody>
+          <tfoot>
+            <tr>
+              <td><span class="sum-label">SUM</span></td>
+              <td class="mono-val" id="income-gross-total">$0.00</td>
+              <td class="mono-val" id="income-net-total">$0.00</td>
+              <td></td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="chart-panel no-print">
+        <div class="chart-title">Gross vs Net Income</div>
+        <div class="chart-canvas-wrap" style="height:180px">
+          <canvas id="chart-income"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ REQUIRED EXPENSES ════════════ -->
+  <p class="section-title">Required Expenses &amp; Investments</p>
+  <div class="card">
+    <div class="card-header">
+      <h2><span class="card-dot dot-red"></span> Required Exp / Investments (Monthly)</h2>
+      <button class="btn btn-primary btn-sm no-print" onclick="addRow('required')">+ Add Row</button>
+      <button class="btn btn-ghost btn-sm no-print" onclick="resetSection('required')">Clear Section</button>
+    </div>
+    <div class="card-split">
+      <div class="tbl-wrap">
+        <table id="required-table" aria-label="Required expenses">
+          <thead>
+            <tr>
+              <th>Expense Item</th>
+              <th>Amount</th>
+              <th>Notes</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="required-body"></tbody>
+          <tfoot>
+            <tr>
+              <td><span class="sum-label">SUM</span></td>
+              <td class="mono-val" id="required-total">$0.00</td>
+              <td></td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="chart-panel no-print">
+        <div class="chart-title">Breakdown by Category</div>
+        <div class="chart-canvas-wrap" style="height:220px">
+          <canvas id="chart-required"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ OPTIONAL EXPENSES ════════════ -->
+  <p class="section-title">Optional / Other Expenses</p>
+  <div class="card">
+    <div class="card-header">
+      <h2><span class="card-dot dot-blue"></span> Optional / Other Exp (Monthly)</h2>
+      <button class="btn btn-primary btn-sm no-print" onclick="addRow('optional')">+ Add Row</button>
+      <button class="btn btn-ghost btn-sm no-print" onclick="resetSection('optional')">Clear Section</button>
+    </div>
+    <div class="card-split">
+      <div class="tbl-wrap">
+        <table id="optional-table" aria-label="Optional expenses">
+          <thead>
+            <tr>
+              <th>Expense Item</th>
+              <th>Amount</th>
+              <th>Notes</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="optional-body"></tbody>
+          <tfoot>
+            <tr>
+              <td><span class="sum-label">SUM</span></td>
+              <td class="mono-val" id="optional-total">$0.00</td>
+              <td></td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="chart-panel no-print">
+        <div class="chart-title">Breakdown by Category</div>
+        <div class="chart-canvas-wrap" style="height:220px">
+          <canvas id="chart-optional"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ MONTHLY SUMMARY ════════════ -->
+  <p class="section-title">Monthly Summary</p>
+  <div class="card">
+    <div class="card-header">
+      <h2><span class="card-dot dot-gold"></span> Monthly Summary</h2>
+    </div>
+    <div class="chart-panel no-print" style="border-bottom:1px solid var(--border);">
+      <div class="chart-title">Income vs Total Expenses</div>
+      <div class="chart-canvas-wrap" style="height:200px">
+        <canvas id="chart-summary"></canvas>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Gross Income</div>
+        <div class="kpi-value neutral" id="sum-gross">$0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Net Income</div>
+        <div class="kpi-value neutral" id="sum-net">$0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Required Exp / Investments</div>
+        <div class="kpi-value muted" id="sum-required">$0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Optional Expenses</div>
+        <div class="kpi-value muted" id="sum-optional">$0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Left After All Expenses</div>
+        <div class="kpi-value neutral" id="sum-left">$0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Left After Required Only</div>
+        <div class="kpi-value neutral" id="sum-left-req">$0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ RETIREMENT PROJECTION ════════════ -->
+  <p class="section-title">Retirement Projection</p>
+  <div class="card">
+    <div class="card-header">
+      <h2><span class="card-dot dot-orange"></span> Retirement Approximated Projections Based on Current Plan</h2>
+      <button class="btn btn-primary btn-sm no-print" onclick="addRetRow()">+ Add Row</button>
+      <button class="btn btn-ghost btn-sm no-print" onclick="resetSection('retirement')">Clear Section</button>
+    </div>
+
+    <!-- Calculator Mode Toggle -->
+    <div class="calc-bar no-print">
+      <label class="toggle-label">
+        <input type="checkbox" id="calc-mode-toggle" onchange="toggleCalcMode()" />
+        Auto-Calculate Projected Value
+      </label>
+      <label>Growth Rate (% / yr)
+        <input type="number" id="growth-rate" value="7" min="0" max="30" step=".1" oninput="recalcRetirement()" />
+      </label>
+      <span style="color:var(--faint);font-size:.76rem;">Uses compound interest: FV = PV×(1+r)^n + PMT×[((1+r)^n−1)/r]</span>
+    </div>
+
+    <div class="card-split">
+      <div class="tbl-wrap">
+        <table id="ret-table" aria-label="Retirement projections">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Current / Per Paycheck</th>
+              <th>Annual Contribution</th>
+              <th>Years Until Retirement</th>
+              <th>Projected Value by Retirement</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="ret-body"></tbody>
+          <tfoot>
+            <tr class="ret-total">
+              <td><strong>Total Net Worth</strong></td>
+              <td>—</td>
+              <td class="mono-val" id="ret-total-annual">$0</td>
+              <td class="mono-val" id="ret-total-years">—</td>
+              <td class="mono-val ret-total" id="ret-total-proj" style="color:var(--gold)">$0</td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="chart-panel no-print">
+        <div class="chart-title">Projected Growth to 2054</div>
+        <div class="chart-canvas-wrap" style="height:260px">
+          <canvas id="chart-retirement"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-wrap -->
+
+<!-- ════════════ FOOTER ════════════ -->
+<footer class="app-footer no-print">
+  <span>Budget Management · All data stored locally in your browser</span>
+  <span>Last saved: <span id="last-saved">—</span></span>
+</footer>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- Modal -->
+<div id="modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-box">
+    <h3 id="modal-title">Confirm Action</h3>
+    <p id="modal-msg">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modal-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   DATA MODEL & DEFAULT DATA
+═══════════════════════════════════════════════ */
+const STORAGE_KEY = 'budget_v4';
+
+function uid() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+const DEFAULT_DATA = {
+  income:     [],
+  required:   [],
+  optional:   [],
+  retirement: []
+};
+
+/* ═══════════════════════════════════════════════
+   STORAGE
+═══════════════════════════════════════════════ */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { income: [], required: [], optional: [], retirement: [] };
+  } catch(e) {
+    return { income: [], required: [], optional: [], retirement: [] };
+  }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY + '_ts', new Date().toISOString());
+  updateTimestamp();
+}
+
+function updateTimestamp() {
+  const ts = localStorage.getItem(STORAGE_KEY + '_ts');
+  if (ts) {
+    const d = new Date(ts);
+    document.getElementById('last-saved').textContent =
+      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+      ' · ' + d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+}
+
+let state = loadData();
+
+/* ═══════════════════════════════════════════════
+   FORMATTING
+═══════════════════════════════════════════════ */
+const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+function parseMoney(v) {
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+/* ═══════════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════════ */
+const CHART_COLORS = [
+  '#4F98A3','#D163A7','#6DAA45','#E8AF34','#BB653B',
+  '#5591C7','#A86FDF','#DD6974','#20808D','#FDAB43',
+  '#BCE2E7','#944454'
+];
+
+const chartDefaults = {
+  color: '#CDCCCA',
+  plugins: {
+    legend: {
+      labels: { color: '#CDCCCA', font: { family: "'Inter',sans-serif", size: 11 }, boxWidth: 12, padding: 10 }
+    },
+    tooltip: {
+      backgroundColor: '#201F1D',
+      borderColor: '#393836',
+      borderWidth: 1,
+      titleColor: '#fff',
+      bodyColor: '#CDCCCA',
+      callbacks: {
+        label: ctx => ' ' + fmt.format(ctx.parsed.y ?? ctx.parsed ?? 0)
+      }
+    }
+  },
+  animation: { duration: 400, easing: 'easeOutQuart' }
+};
+
+const pieTooltipLabel = ctx => {
+  const v = ctx.parsed ?? 0;
+  const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+  const pct = total > 0 ? ((v/total)*100).toFixed(1) : 0;
+  return ` ${fmt.format(v)}  (${pct}%)`;
+};
+
+let charts = {};
+
+function getOrCreate(id, config) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  if (charts[id]) { charts[id].destroy(); }
+  charts[id] = new Chart(canvas, config);
+  return charts[id];
+}
+
+function updateChart(id, data) {
+  if (!charts[id]) return;
+  const c = charts[id];
+  if (data.labels) c.data.labels = data.labels;
+  if (data.datasets) c.data.datasets = data.datasets;
+  c.update('active');
+}
+
+// ── Bar: Gross vs Net Income ──
+function drawIncomeChart() {
+  const labels = state.income.map(r => r.item || 'Unnamed');
+  const gross  = state.income.map(r => parseFloat(r.gross)||0);
+  const net    = state.income.map(r => parseFloat(r.net)||0);
+  if (!labels.length) { showEmpty('chart-income'); return; }
+  showChart('chart-income');
+  getOrCreate('chart-income', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Gross', data: gross, backgroundColor: '#4F98A3', borderRadius: 4 },
+        { label: 'Net',   data: net,   backgroundColor: '#6DAA45', borderRadius: 4 }
+      ]
+    },
+    options: {
+      ...chartDefaults,
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#797876', font: { size: 11 } }, grid: { color: '#393836' } },
+        y: { ticks: { color: '#797876', font: { size: 11 }, callback: v => '$' + v.toLocaleString() }, grid: { color: '#393836' } }
+      },
+      plugins: { ...chartDefaults.plugins }
+    }
+  });
+}
+
+// ── Pie: Expense breakdown ──
+function drawPieChart(id, section) {
+  const rows = state[section].filter(r => (parseFloat(r.amount)||0) > 0);
+  if (!rows.length) { showEmpty(id); return; }
+  showChart(id);
+  getOrCreate(id, {
+    type: 'doughnut',
+    data: {
+      labels: rows.map(r => r.item || 'Unnamed'),
+      datasets: [{
+        data: rows.map(r => parseFloat(r.amount)||0),
+        backgroundColor: CHART_COLORS.slice(0, rows.length),
+        borderColor: '#1C1B19',
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      responsive: true, maintainAspectRatio: false,
+      cutout: '58%',
+      plugins: {
+        ...chartDefaults.plugins,
+        tooltip: {
+          ...chartDefaults.plugins.tooltip,
+          callbacks: { label: pieTooltipLabel }
+        }
+      }
+    }
+  });
+}
+
+// ── Bar: Income vs Expenses summary ──
+function drawSummaryChart() {
+  const netInc = state.income.reduce((s,r) => s + (parseFloat(r.net)||0), 0);
+  const req    = state.required.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  const opt    = state.optional.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  const left   = netInc - req - opt;
+  const hasData = netInc || req || opt;
+  if (!hasData) { showEmpty('chart-summary'); return; }
+  showChart('chart-summary');
+  getOrCreate('chart-summary', {
+    type: 'bar',
+    data: {
+      labels: ['Net Income', 'Required Exp', 'Optional Exp', 'Remaining'],
+      datasets: [{
+        label: 'Amount',
+        data: [netInc, req, opt, left],
+        backgroundColor: [
+          '#4F98A3',
+          '#D163A7',
+          '#BB653B',
+          left >= 0 ? '#6DAA45' : '#D163A7'
+        ],
+        borderRadius: 5
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: false }
+      },
+      scales: {
+        x: { ticks: { color: '#797876', font: { size: 11 } }, grid: { color: '#393836' } },
+        y: { ticks: { color: '#797876', font: { size: 11 }, callback: v => '$' + v.toLocaleString() }, grid: { color: '#393836' } }
+      }
+    }
+  });
+}
+
+// ── Line: Retirement growth over time ──
+function drawRetirementChart() {
+  const calcMode  = document.getElementById('calc-mode-toggle').checked;
+  const growthRate = parseFloat(document.getElementById('growth-rate').value) / 100 || 0.07;
+  const maxYears = Math.max(1, ...state.retirement.map(r => parseInt(r.years)||0));
+  if (!state.retirement.length) { showEmpty('chart-retirement'); return; }
+  showChart('chart-retirement');
+
+  const yearLabels = Array.from({ length: maxYears + 1 }, (_, i) => 2026 + i);
+
+  const datasets = state.retirement.map((row, i) => {
+    const data = yearLabels.map((_, yr) => {
+      const n = Math.min(yr, parseInt(row.years)||0);
+      return calcProjected(
+        parseFloat(row.current)||0,
+        parseFloat(row.annual)||0,
+        growthRate,
+        n
+      );
+    });
+    return {
+      label: row.category || `Row ${i+1}`,
+      data,
+      borderColor: CHART_COLORS[i % CHART_COLORS.length],
+      backgroundColor: CHART_COLORS[i % CHART_COLORS.length] + '22',
+      borderWidth: 2,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.35
+    };
+  });
+
+  getOrCreate('chart-retirement', {
+    type: 'line',
+    data: { labels: yearLabels, datasets },
+    options: {
+      ...chartDefaults,
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { ticks: { color: '#797876', font: { size: 10 }, maxTicksLimit: 8 }, grid: { color: '#393836' } },
+        y: {
+          ticks: {
+            color: '#797876', font: { size: 10 },
+            callback: v => v >= 1e6 ? '$' + (v/1e6).toFixed(1)+'M' : '$' + v.toLocaleString()
+          },
+          grid: { color: '#393836' }
+        }
+      },
+      plugins: {
+        ...chartDefaults.plugins,
+        tooltip: {
+          ...chartDefaults.plugins.tooltip,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt.format(ctx.parsed.y)}`
+          }
+        }
+      }
+    }
+  });
+}
+
+function showEmpty(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  const wrap = canvas.parentElement;
+  // Keep canvas in DOM but hidden; show placeholder
+  canvas.style.display = 'none';
+  if (!wrap.querySelector('.chart-empty')) {
+    const ph = document.createElement('div');
+    ph.className = 'chart-empty';
+    ph.textContent = 'Add data to see chart';
+    wrap.insertBefore(ph, canvas);
+  }
+}
+
+function showChart(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  canvas.style.display = '';
+  const wrap = canvas.parentElement;
+  const ph = wrap.querySelector('.chart-empty');
+  if (ph) ph.remove();
+}
+
+function drawAllCharts() {
+  drawIncomeChart();
+  drawPieChart('chart-required', 'required');
+  drawPieChart('chart-optional', 'optional');
+  drawSummaryChart();
+  drawRetirementChart();
+}
+
+/* ═══════════════════════════════════════════════
+   RECALC TOTALS (no DOM rebuild — preserves focus)
+═══════════════════════════════════════════════ */
+function recalcTotals() {
+  // Income totals
+  const grossSum = state.income.reduce((s,r) => s + (parseFloat(r.gross)||0), 0);
+  const netSum   = state.income.reduce((s,r) => s + (parseFloat(r.net)||0), 0);
+  document.getElementById('income-gross-total').textContent = fmt.format(grossSum);
+  document.getElementById('income-net-total').textContent   = fmt.format(netSum);
+  // Expense totals
+  ['required','optional'].forEach(sec => {
+    const sum = state[sec].reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+    document.getElementById(`${sec}-total`).textContent = fmt.format(sum);
+  });
+  // Retirement totals
+  const calcMode  = document.getElementById('calc-mode-toggle').checked;
+  const growthRate = parseFloat(document.getElementById('growth-rate').value) / 100 || 0.07;
+  let totalAnnual = 0, totalProj = 0;
+  state.retirement.forEach(row => {
+    totalAnnual += (parseFloat(row.annual)||0);
+    totalProj   += calcMode ? calcProjected(row.current, row.annual, growthRate, row.years) : (parseFloat(row.projected)||0);
+  });
+  document.getElementById('ret-total-annual').textContent = fmt.format(totalAnnual);
+  document.getElementById('ret-total-proj').textContent   = fmt.format(totalProj);
+  // Summary KPIs
+  renderSummary();
+  // Redraw all charts live
+  drawAllCharts();
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — INCOME
+═══════════════════════════════════════════════ */
+function renderIncome() {
+  const tbody = document.getElementById('income-body');
+  tbody.innerHTML = '';
+
+  state.income.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="cell-input" aria-label="Income item" value="${esc(row.item)}"
+          oninput="updateField('income','${row.id}','item',this.value)" /></td>
+      <td><input class="cell-input num" aria-label="Gross amount" value="${row.gross}"
+          oninput="updateField('income','${row.id}','gross',parseFloat(this.value)||0);recalcTotals()" /></td>
+      <td><input class="cell-input num" aria-label="Net pay" value="${row.net}"
+          oninput="updateField('income','${row.id}','net',parseFloat(this.value)||0);recalcTotals()" /></td>
+      <td><input class="cell-input" aria-label="Notes" placeholder="—" value="${esc(row.notes)}"
+          oninput="updateField('income','${row.id}','notes',this.value)" /></td>
+      <td class="td-actions no-print">
+        <button class="btn btn-ghost btn-sm btn-icon" aria-label="Delete row" onclick="deleteRow('income','${row.id}')">✕</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  recalcTotals();
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — TWO-COLUMN TABLE (required / optional)
+═══════════════════════════════════════════════ */
+function renderExpenses(section) {
+  const tbody = document.getElementById(`${section}-body`);
+  tbody.innerHTML = '';
+
+  state[section].forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="cell-input" aria-label="Expense item" value="${esc(row.item)}"
+          oninput="updateField('${section}','${row.id}','item',this.value)" /></td>
+      <td><input class="cell-input num" aria-label="Amount" value="${row.amount}"
+          oninput="updateField('${section}','${row.id}','amount',parseFloat(this.value)||0);recalcTotals()" /></td>
+      <td><input class="cell-input" aria-label="Notes" placeholder="—" value="${esc(row.notes)}"
+          oninput="updateField('${section}','${row.id}','notes',this.value)" /></td>
+      <td class="td-actions no-print">
+        <button class="btn btn-ghost btn-sm btn-icon" aria-label="Delete row" onclick="deleteRow('${section}','${row.id}')">✕</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  recalcTotals();
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — SUMMARY
+═══════════════════════════════════════════════ */
+function renderSummary() {
+  const grossInc = state.income.reduce((s,r)  => s + (r.gross  || 0), 0);
+  const netInc   = state.income.reduce((s,r)  => s + (r.net    || 0), 0);
+  const reqExp   = state.required.reduce((s,r) => s + (r.amount || 0), 0);
+  const optExp   = state.optional.reduce((s,r) => s + (r.amount || 0), 0);
+
+  const leftAll  = netInc - reqExp - optExp;
+  const leftReq  = netInc - reqExp;
+
+  function setKPI(id, val, fn) {
+    const el = document.getElementById(id);
+    const cls = fn ? fn(val) : 'neutral';
+    el.className = `kpi-value ${cls}`;
+    el.textContent = fmt.format(val);
+  }
+
+  setKPI('sum-gross',    grossInc);
+  setKPI('sum-net',      netInc);
+  setKPI('sum-required', reqExp,   () => 'muted');
+  setKPI('sum-optional', optExp,   () => 'muted');
+  setKPI('sum-left',     leftAll,  v => v >= 0 ? 'positive' : 'negative');
+  setKPI('sum-left-req', leftReq,  v => v >= 0 ? 'positive' : 'negative');
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — RETIREMENT
+═══════════════════════════════════════════════ */
+function calcProjected(pv, pmt, r, n) {
+  // FV = PV*(1+r)^n + PMT * [((1+r)^n - 1) / r]
+  if (r === 0) return pv + pmt * n;
+  const factor = Math.pow(1 + r, n);
+  return pv * factor + pmt * ((factor - 1) / r);
+}
+
+function renderRetirement() {
+  const tbody = document.getElementById('ret-body');
+  tbody.innerHTML = '';
+  const calcMode = document.getElementById('calc-mode-toggle').checked;
+  const growthRate = parseFloat(document.getElementById('growth-rate').value) / 100 || 0.07;
+
+  let totalAnnual = 0, totalProj = 0;
+
+  state.retirement.forEach(row => {
+    let proj = row.projected;
+    if (calcMode) {
+      proj = calcProjected(row.current, row.annual, growthRate, row.years);
+    }
+    totalAnnual += (row.annual || 0);
+    totalProj   += proj;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="cell-input" aria-label="Category" value="${esc(row.category)}"
+          oninput="updateField('retirement','${row.id}','category',this.value)" /></td>
+      <td><input class="cell-input num" aria-label="Current / per paycheck" value="${row.current}"
+          oninput="updateField('retirement','${row.id}','current',parseFloat(this.value)||0);recalcTotals()" /></td>
+      <td><input class="cell-input num" aria-label="Annual contribution" value="${row.annual}"
+          oninput="updateField('retirement','${row.id}','annual',parseFloat(this.value)||0);recalcTotals()" /></td>
+      <td><input class="cell-input num" aria-label="Years until retirement" value="${row.years}"
+          oninput="updateField('retirement','${row.id}','years',parseInt(this.value)||0);recalcTotals()" /></td>
+      <td>
+        ${calcMode
+          ? `<span class="mono-val" style="color:var(--gold)">${fmt.format(proj)}</span>`
+          : `<input class="cell-input num" aria-label="Projected value" value="${row.projected}"
+              oninput="updateField('retirement','${row.id}','projected',parseFloat(this.value)||0);recalcTotals()" />`
+        }
+      </td>
+      <td class="td-actions no-print">
+        <button class="btn btn-ghost btn-sm btn-icon" aria-label="Delete row" onclick="deleteRow('retirement','${row.id}')">✕</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('ret-total-annual').textContent = fmt.format(totalAnnual);
+  document.getElementById('ret-total-proj').textContent   = fmt.format(totalProj);
+  // Note: recalcTotals() not called here to avoid double-counting; totals set directly above
+}
+
+/* ═══════════════════════════════════════════════
+   MUTATIONS
+═══════════════════════════════════════════════ */
+function updateField(section, id, field, value) {
+  const row = state[section].find(r => r.id === id);
+  if (row) row[field] = value;
+  saveData();
+}
+
+function addRow(section) {
+  let row;
+  if (section === 'income') {
+    row = { id: uid(), item: '', gross: 0, net: 0, notes: '' };
+  } else {
+    row = { id: uid(), item: '', amount: 0, notes: '' };
+  }
+  state[section].push(row);
+  saveData();
+  if (section === 'income') { renderIncome(); renderSummary(); }
+  else { renderExpenses(section); renderSummary(); }
+  // Focus the first input of the new row
+  setTimeout(() => {
+    const tbody = document.getElementById(`${section}-body`);
+    const last  = tbody.lastElementChild;
+    if (last) last.querySelector('input')?.focus();
+  }, 50);
+}
+
+function addRetRow() {
+  state.retirement.push({ id: uid(), category: '', current: 0, annual: 0, years: 28, projected: 0 });
+  saveData();
+  renderRetirement();
+}
+
+function deleteRow(section, id) {
+  state[section] = state[section].filter(r => r.id !== id);
+  saveData();
+  if (section === 'income') { renderIncome(); renderSummary(); }
+  else if (section === 'retirement') { renderRetirement(); }
+  else { renderExpenses(section); renderSummary(); }
+  toast('Row deleted');
+}
+
+function resetSection(section) {
+  const labels = {
+    income: 'Income',
+    required: 'Required Expenses',
+    optional: 'Optional Expenses',
+    retirement: 'Retirement Projections'
+  };
+  openModal(
+    `Clear ${labels[section]}?`,
+    `This will remove all rows in the ${labels[section]} section. Your other sections will be unaffected.`,
+    () => {
+      state[section] = [];
+      saveData();
+      renderAll();
+      toast(`${labels[section]} cleared`);
+    }
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   CALCULATOR MODE
+═══════════════════════════════════════════════ */
+function toggleCalcMode() {
+  renderRetirement();
+  drawRetirementChart();
+}
+
+function recalcRetirement() {
+  if (document.getElementById('calc-mode-toggle').checked) {
+    renderRetirement();
+  }
+  drawRetirementChart();
+}
+
+/* ═══════════════════════════════════════════════
+   CLEAR ALL
+═══════════════════════════════════════════════ */
+function confirmClearAll() {
+  openModal(
+    'Clear All Data?',
+    'This will permanently erase all rows in every section. All tables will be empty. This cannot be undone.',
+    () => {
+      state = { income: [], required: [], optional: [], retirement: [] };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.removeItem(STORAGE_KEY + '_ts');
+      renderAll();
+      document.getElementById('last-saved').textContent = '—';
+      toast('All data cleared');
+    }
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   EXPORT / IMPORT
+═══════════════════════════════════════════════ */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `budget-export-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Budget exported as JSON');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.income || !imported.required || !imported.optional || !imported.retirement) {
+        toast('⚠ Invalid file format'); return;
+      }
+      openModal(
+        'Import Budget Data?',
+        'This will overwrite your current budget data with the imported file. Make sure you have a backup if needed.',
+        () => {
+          state = imported;
+          saveData();
+          renderAll();
+          toast('Budget data imported successfully');
+        }
+      );
+    } catch(err) {
+      toast('⚠ Failed to parse JSON file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // reset input
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════ */
+let _modalCallback = null;
+
+function openModal(title, msg, onConfirm) {
+  document.getElementById('modal-title').textContent   = title;
+  document.getElementById('modal-msg').textContent     = msg;
+  document.getElementById('modal').style.display       = 'flex';
+  _modalCallback = onConfirm;
+  document.getElementById('modal-confirm-btn').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  _modalCallback = null;
+}
+
+document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+  const cb = _modalCallback;
+  closeModal();
+  if (cb) cb();
+});
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* ═══════════════════════════════════════════════
+   ESCAPE HTML
+═══════════════════════════════════════════════ */
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER ALL
+═══════════════════════════════════════════════ */
+function renderAll() {
+  renderIncome();
+  renderExpenses('required');
+  renderExpenses('optional');
+  renderSummary();
+  renderRetirement();
+  updateTimestamp();
+  drawAllCharts();
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+renderAll();
+</script>
+</body>
+</html>
